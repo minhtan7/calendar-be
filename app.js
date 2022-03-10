@@ -17,7 +17,7 @@ mongoose
         useUnifiedTopology: true,
     })
     .then(() => {
-        console.log(`Mongoose successfully connect to database `);
+        console.log(`Mongoose successfully connect to database`);
     })
     .catch((err) => console.log(err));
 
@@ -28,6 +28,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors())
 
-app.use('/', indexRouter);
+// app.use('/', indexRouter);
 
 module.exports = app;
