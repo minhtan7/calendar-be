@@ -22,7 +22,16 @@ app.get('/:mentorId/availability', async (req, res, next) => {
     })
 
 });
-
+app.get('/mentor/:id', async (req, res, next) => {
+    const { id } = req.params
+    const mentor = await User.findById(id).select({ name: 1, email: 1 })
+    res.send({ mentor })
+});
+app.get('/mentee/:id', async (req, res, next) => {
+    const { id } = req.params
+    const mentee = await User.findById(id).select({ name: 1, email: 1 })
+    res.send({ mentee })
+});
 
 
 app.post('/users', async (req, res, next) => {
