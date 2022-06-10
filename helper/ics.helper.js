@@ -1,6 +1,6 @@
 const ics = require('ics')
 const sgMail = require('@sendgrid/mail')
-const Template = require('../model/Template')
+const Template = require('../models/Templates')
 const moment = require("moment")
 
 
@@ -17,6 +17,7 @@ emailHelper.createTemplateIfNotExist = async (props) => {
 
 emailHelper.createEvent = async ({ session, variableObj }) => {
     const { mentee, mentor, createdAt } = session
+
     const start = moment(session.startAt).toArray()
     start[1]++
     const eventTemplate = await Template.findOne({ template_key: "event" }).lean()
@@ -33,7 +34,7 @@ emailHelper.createEvent = async ({ session, variableObj }) => {
         duration: { hours: 1 },
         title: session.title,
         description: eventTemplate.html,
-        // location: 'Folsom Field, University of Colorado (finish line)',//link to gg meet?
+        location: mentor.meetingLink,
         status: 'CONFIRMED',
         organizer: {
             name: mentor.name, email: mentor.email
@@ -54,11 +55,12 @@ emailHelper.createEvent = async ({ session, variableObj }) => {
 
 emailHelper.renderEmail = async ({ template_key, variableObj, toEmail, session }) => {
     let msg
+
     const template = await Template.findOne({ template_key })
-    if (!template) throw new Error("Invalid template key")
+    if (!template) throw new Error("400 - Invalid template key")
     for (let i = 0; i < template.variables.length; i++) {
         let key = template.variables[i]
-        if (!variableObj[key]) throw new Error("Invalid variable key")
+        if (!variableObj[key]) throw new Error("400 - Invalid variable key")
         let re = new RegExp(`%${key}%`, "g")
         template.html = template.html.replace(re, variableObj[key]);
         template.subject = template.subject.replace(re, variableObj[key]);
@@ -67,29 +69,30 @@ emailHelper.renderEmail = async ({ template_key, variableObj, toEmail, session }
     if (!session) {
         msg = {
             from: template.from,
-            to: "thu.lcm@coderschool.vn",
+            to: "tan.vo@coderschool.vn",
             subject: template.subject,
-            content: [{
-                type: "text/plain",
-                value: "Plain Content",
-            },
-            {
-                type: "text/html",
-                value: template.html,
-            }]
+            content: [
+                {
+                    type: "text/plain",
+                    value: "Plain Content",
+                },
+                {
+                    type: "text/html",
+                    value: template.html,
+                }]
         }
     } else {
         const event = await emailHelper.createEvent({ session, variableObj })
         const { value, error } = ics.createEvent(event);
+
         if (error) {
             console.log(error);
             throw new Error("Something wrong with create event")
         }
-        console.log("value", value)
         msg = {
             from: template.from,
             to: toEmail,
-            cc: "thu.lcm@coderschool.vn",
+            // cc: "thu.lcm@coderschool.vn",
             subject: template.subject,
             content: [{
                 type: "text/plain",
@@ -119,9 +122,14 @@ emailHelper.renderEmail = async ({ template_key, variableObj, toEmail, session }
 
 
 emailHelper.send = async (msg) => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-    await sgMail.send(msg)
-    console.log("Email sent")
+    try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+        await sgMail.send(msg)
+        console.log("Email sent")
+    } catch (err) {
+        console.log("err", err)
+    }
+
 }
 
 

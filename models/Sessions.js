@@ -17,7 +17,7 @@ const sessionSchema = Schema({
 
 sessionSchema.methods.markCanceled = async function () {
     if (this.isCanceled) {
-        throw new Error("Session has already been canceled.")
+        throw new Error("409 - Session has already been canceled.")
     }
     this.isDeleted = true
     await this.save()
